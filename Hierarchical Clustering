@@ -1,0 +1,62 @@
+setwd("C:/Users/admin-22499/Documents/MasterIM/S1/Analyse_BD")
+
+
+fraude <- read.csv('Data_Projet_1.csv', header=TRUE, sep=',', dec='.', stringsAsFactors = TRUE)
+
+fraude <- fraude[,-1]
+fraude <- fraude[,-1]
+
+library(factoextra)
+library(cluster)
+
+fraude$fraudulent <- as.numeric(fraude$fraudulent)
+fraude$gender <- as.numeric(fraude$gender)
+fraude$incident_cause <- as.numeric(fraude$incident_cause)
+fraude$claim_area <- as.numeric(fraude$claim_area)
+fraude$police_report <- as.numeric(fraude$police_report)
+fraude$claim_type <- as.numeric(fraude$claim_type)
+
+fraude <- scale(fraude)
+
+#define linkage methods
+m <- c( "average", "single", "complete", "ward")
+names(m) <- c( "average", "single", "complete", "ward")
+
+ac <- function(x) {
+  agnes(fraude, method = x)$ac
+}
+sapply(m, ac)
+
+#perform hierarchical clustering using Ward's minimum variance
+clust <- agnes(fraude, method = "ward")
+
+#calculate gap statistic for each number of clusters (up to 10 clusters)
+gap_stat <- clusGap(fraude, FUN = hcut, nstart = 25, K.max = 10, B = 50)
+pltree(clust, cex = 0.6, hang = -1, main = "Dendrogram")
+
+#produce plot of clusters vs. gap statistic
+fviz_gap_stat(gap_stat)
+
+
+#compute distance matrix
+d <- dist(fraude, method = "euclidean")
+
+#perform hierarchical clustering using Ward's method
+final_clust <- hclust(d, method = "ward.D2" )
+
+#cut the dendrogram into 10 clusters
+groups <- cutree(final_clust, k=10)
+
+#find number of observations in each cluster
+table(groups)
+
+
+#append cluster labels to original data
+final_data <- cbind(fraude, cluster = groups)
+
+#display first six rows of final data
+head(final_data)
+
+
+#find mean values for each cluster
+aggregate(final_data, by=list(cluster=final_data$cluster), mean)
