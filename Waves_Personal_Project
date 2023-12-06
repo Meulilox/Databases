@@ -1,0 +1,75 @@
+import binhex
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import colors
+from matplotlib.widgets import Button,Slider
+import matplotlib.animation as animation
+
+A = np.linspace(0,5,20)
+B = np.linspace(0,5,20)
+
+def f(x,y,a,b):
+    return np.cos(a+x)+np.sin(b+y)
+
+# defining all 3 axis
+u=A
+v=B
+u,v=np.meshgrid(u,v) 
+
+
+#defining the 3D scene
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+line1 = ax.plot_surface(u,v,f(u,v,1,1),  cmap="Blues_r",alpha=0.9)
+
+
+
+# adjust the main plot to make room for the sliders
+fig.subplots_adjust(left=0.1,bottom=0.25)
+
+
+# Make a horizontal slider
+axA = fig.add_axes([0.25, 0.1, 0.65, 0.03])
+A_slider = Slider(
+    ax=axA,
+    label='oui',
+    valmin=0,
+    valmax=15,
+    valinit=0
+)
+
+# Make a vertical slider
+axB = fig.add_axes([0.1, 0.25, 0.0225, 0.63])
+B_slider = Slider(
+    ax=axB,
+    label='non',
+    valmin=0,
+    valmax=15,
+    valinit=0,
+    orientation="vertical"
+)
+
+# Create a `matplotlib.widgets.Button` to reset the sliders to initial values
+resetax = fig.add_axes([0.8, 0.025, 0.1, 0.04])
+button = Button(resetax, 'Reset', hovercolor='0.975')
+
+def reset(event):
+    A_slider.reset()
+    B_slider.reset()
+button.on_clicked(reset)
+
+def update(val):
+    ax.collections.clear()
+    line1 = ax.plot_surface(u,v,f(u,v,A_slider.val,B_slider.val),cmap="Blues_r",alpha=0.9)
+    fig.canvas.draw_idle()
+
+# register the update function with each slider
+A_slider.on_changed(update)
+B_slider.on_changed(update)
+
+# plotting
+A_slider.val
+
+ax.set_title("Waves project")
+
+plt.show()

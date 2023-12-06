@@ -1,0 +1,231 @@
+#   PENDULUM PROJECT   #
+import numpy as np
+import matplotlib.pyplot as plt
+
+#iInitializing Variables
+m=2       #pendulum mass
+g=9.81      #gravitational constant
+l=1     #Wire Length     
+T=10        #Time interval in seconds starting from 0
+N=10000
+t=[T/(N+1)*i for i in range(N+2)]       #time intervals vector
+dt=t[1]-t[0]        #uniform time steps delta t
+w=np.sqrt(g/l)      #constante for the exact solution
+I=[[1,0],[0,1]]     #identity matrix
+A=[[0,1],[-g/l,0]]     #matrix A of f function
+B=[[0,1*dt],[-g/l*dt,0]] #dt*A
+C=[[0,1*dt/2],[-g/l*(dt/2),0]] #(dt/2)*A 
+yinit=[np.pi/6,0]     #Y0
+
+#    NUMERICAL APPROXIMATION     #
+
+#    EXACT SOLUTION     #
+def angle(t):
+     y=[yinit[0]]
+     for i in range(1,len(t)):
+          y.append(yinit[0]*np.cos(w*t[i]))
+     return y
+tetaex=angle(t)
+tpex=[-yinit[0]*w*np.sin(w*t[i]) for i in range(len(tetaex))]
+# The schemes return their approximation of the theta function
+
+#    EULER EXPLICIT METHOD    #
+def EulerE(t):
+     y=[yinit]
+     for i in range(1,len(t)):
+          y.append(y[i-1]+dt*np.dot(A,np.transpose(y[i-1])))
+     teta=[y[i][0] for i in range (len(y))]
+     tp1=[y[i][1] for i in range (len(y))]
+     return tp1,teta
+[tp1,teta1]=EulerE(t)
+
+#    EULER IMPLICIT METHOD     #
+def EulerI(t):
+     y=[yinit]
+     for i in range(1,len(t)):
+          y.append(np.dot(np.linalg.inv(np.subtract(I,B)),np.transpose(y[i-1])))
+     teta=[y[i][0] for i in range (len(y))]
+     tp2=[y[i][1] for i in range (len(y))]
+     return tp2,teta
+[tp2,teta2]=EulerI(t)
+
+
+
+#   EULER MODIFIED METHOD     #
+def EulerM(t):
+     y=[yinit]
+     for i in range(1,len(t)):
+          y.append(y[i-1]+np.dot(B,np.transpose((y[i-1]+np.dot(C,np.transpose(y[i-1]))))))
+     teta=[y[i][0] for i in range (len(y))]
+     tp3=[y[i][1] for i in range (len(y))]
+     return tp3,teta
+[tp3,teta3]=EulerM(t)
+
+#    CRANK NIKOLSON     #
+def CN(t):
+     y=[yinit]
+     for i in range(1,len(t)):
+          y.append(np.dot(np.linalg.inv(np.subtract(I,C)),np.transpose(y[i-1]+np.dot(C,np.transpose(y[i-1])))))
+     teta=[y[i][0] for i in range (len(y))]
+     tp4=[y[i][1] for i in range (len(y))]
+     return tp4,teta
+[tp4,teta4]=CN(t)
+
+errEX=[]
+for i in range(len(t)):
+     errEX.append(np.abs(tetaex[i]-teta1[i]))
+errCN=[]   
+for i in range(len(t)):
+     errCN.append(np.abs(tetaex[i]-teta4[i]))
+print(np.max(errCN))
+print(0.0012755230442871544-np.max(errEX))
+
+
+# SYMPLECTIC SCHEME #
+theta=[np.pi/6]
+ptemp=[0]
+def SS(t):
+     for i in range(1,len(t)):
+          theta.append(theta[i-1]+dt/(m*l**2)*ptemp[i-1])
+          ptemp.append(ptemp[i-1]-dt*m*l*g*np.sin(theta[i]))
+     return theta,ptemp
+[teta5,p]=SS(t)
+tp5=[p[i]/(m*l**2) for i in range(len(teta5))]
+
+#    GRAPHICAL REPRESENTATION     #
+
+#graph de l'angle en fonction du temps
+def graph():
+     plt.plot(t,teta1,color='steelblue',label="Euler Explicit Method")
+     plt.plot(t,teta2,color='seagreen',label="Euler Implicit Method")
+     plt.plot(t,teta3,color='mediumorchid',label="Euler Modified Method")
+     plt.plot(t,teta4,color='purple',label="Crank Nikolson")
+     plt.plot(t,teta5,color='lightsalmon',label='Symplectic Scheme')
+     plt.plot(t,tetaex,color='red',label='Exact Solution')
+     plt.legend()
+     plt.show()
+     
+# cartesian position of the pendulum
+def pos():
+     plt.plot(np.sin(teta1),-1*np.cos(teta1),color='steelblue',label="Euler Explicit Method")
+     plt.plot(np.sin(teta2),-1*np.cos(teta2),color='seagreen',label="Euler Implicit Method")
+     plt.plot(np.sin(teta3),-1*np.cos(teta3),color='mediumorchid',label="Euler Modified Method")
+     plt.plot(np.sin(teta4),-1*np.cos(teta4),color='purple',label="Crank Nikolson")
+     plt.plot(np.sin(teta5),-1*np.cos(teta5),color='lightsalmon',label="Symplectic Scheme")
+     plt.plot(np.sin(tetaex),-1*np.cos(tetaex),color='red',label='Exact Solution')
+     #plt.axis([-0.4,0.4,-1,0])
+     plt.legend()
+     plt.show()
+
+#    DISCREET ENERGY CONSERVATION     #
+def eps():
+     enEE=[]
+     enEI=[]
+     enEM=[]
+     enCN=[]
+     enSS=[]
+     enEX=[]
+     for i in range(len(tp1)):
+          enEE.append((m*l**2)/2*tp1[i]**2+m*g*l*(1-np.cos(teta1[i])))
+          enEI.append((m*l**2)/2*tp2[i]**2+m*g*l*(1-np.cos(teta2[i])))
+          enEM.append((m*l**2)/2*tp3[i]**2+m*g*l*(1-np.cos(teta3[i])))
+          enCN.append((m*l**2)/2*tp4[i]**2+m*g*l*(1-np.cos(teta4[i])))
+          enSS.append((m*l**2)/2*tp5[i]**2+m*g*l*(1-np.cos(teta5[i])))
+          enEX.append((m*l**2)/2*tpex[i]**2+m*g*l*(1-np.cos(tetaex[i])))
+     plt.plot(t,enEE,color='steelblue',label='Euler Explicit Method')
+     plt.plot(t,enEI,color='seagreen',label='Euler Implicit Method')
+     plt.plot(t,enEM,color='mediumorchid',label='Euler Modified Method')
+     plt.plot(t,enCN,color='purple',label='Crank Nikolson')
+     plt.plot(t,enSS,color='lightsalmon',label='Symplectic Scheme')
+     plt.plot(t,enEX,color='red',label='Exact Solution')
+     plt.legend()
+     plt.show()
+     
+#figures of angle, position and energy over time
+#print(graph(),pos(),eps())
+
+#    DOUBLE PENDULUM    #
+
+k=-0.001 #constante de couplage
+zinit=[np.pi/6,np.pi/8,0,0] #initialisation des angles des masses 1 et 2
+W=[[0,0,1,0],[0,0,0,1],[-(k+1),k,0,0],[k,-(k+1),0,0]] #Nouvelle matrice A pour le système du pendule double
+U=[[0,0,dt,0],[0,0,0,dt],[-(k+1)*dt,k*dt,0,0],[k*dt,-(k+1)*dt,0,0]] #dt*W
+V=[[0,0,dt/2,0],[0,0,0,dt/2],[-(k+1)*dt/2,k*dt/2,0,0],[k*dt/2,-(k+1)*dt/2,0,0]] #(dt/2)*W
+I4=[[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]] #Matrice identité
+
+#    EULER EXPLICIT METHOD     #
+def EulerE2(t):
+     z=[zinit]
+     for i in range(1,len(t)):
+          z.append(z[i-1]+dt*np.dot(W,np.transpose(z[i-1])))
+     teta_1=[z[i][0] for i in range (len(z))]
+     teta_2=[z[i][1] for i in range (len(z))]
+     tetap1=[z[i][2] for i in range (len(z))]
+     tetap2=[z[i][3] for i in range (len(z))]
+     return teta_1,teta_2,tetap1,tetap2 
+[teta_11,teta_21,tetap11,tetap21]=EulerE2(t)
+
+#    EULER IMPLICIT METHOD     #
+def EulerI2(t):
+     z=[zinit]
+     for i in range(1,len(t)):
+          z.append(np.dot(np.linalg.inv(np.subtract(I4,U)),np.transpose(z[i-1])))
+     teta_1=[z[i][0] for i in range (len(z))]
+     teta_2=[z[i][1] for i in range (len(z))]
+     tetap1=[z[i][2] for i in range (len(z))]
+     tetap2=[z[i][3] for i in range (len(z))]
+     return teta_1,teta_2,tetap1,tetap2
+[teta_12,teta_22,tetap12,tetap22]=EulerI2(t)
+
+#    CRANK NIKOLSON     #
+def CN2(t):
+     z=[zinit]
+     for i in range(1,len(t)):
+          z.append(np.dot(np.linalg.inv(np.subtract(I4,V)),np.transpose(z[i-1]+np.dot(V,np.transpose(z[i-1])))))
+     teta_1=[z[i][0] for i in range (len(z))]
+     teta_2=[z[i][1] for i in range (len(z))]
+     tetap1=[z[i][2] for i in range (len(z))]
+     tetap2=[z[i][3] for i in range (len(z))]
+     return teta_1,teta_2,tetap1,tetap2
+[teta_13,teta_23,tetap13,tetap23]=CN2(t)
+
+#    ANGLES OVER TIME     #
+def graphDP():
+     plt.plot(t,teta_11,color='steelblue',label='EE P1')
+     plt.plot(t,teta_21,color='mediumblue',label='EE P2')
+     plt.plot(t,teta_12,color='saddlebrown',label='EI P1')
+     plt.plot(t,teta_22,color='black',label='EI P2')
+     plt.plot(t,teta_13,color='palevioletred', label='CN P1')
+     plt.plot(t,teta_23,color='salmon',label='CN P2')
+     plt.legend()
+     plt.show()
+     
+#    POSITIONS IN THE CARTESIAN COORDINATE SYSTEM     #     
+def posDP():
+     plt.plot(np.sin(teta_11),-np.cos(teta_11),color='paleturquoise',label='EE P1')
+     plt.plot(np.sin(teta_11)+np.sin(teta_21),-np.cos(teta_21)-np.cos(teta_21),color='mediumblue',label='EE P2')
+     plt.plot(np.sin(teta_12),-np.cos(teta_22),color='slategrey',label='EI P1')
+     plt.plot(np.sin(teta_12)+np.sin(teta_22),-np.cos(teta_12)-np.cos(teta_22),color='black',label='EI P2')
+     plt.plot(np.sin(teta_13),-np.cos(teta_13),color='sandybrown',label='CN P1')
+     plt.plot(np.sin(teta_13)+np.sin(teta_23),-np.cos(teta_13)-np.cos(teta_23),color='salmon',label='CN P2')
+     plt.legend()
+     plt.show()
+
+#    ENERGY EVOLUTION OVER TIME     #
+
+def epsDP(t):
+     enEE2=[]
+     enEI2=[]
+     enCN2=[]
+     for i in range(len(tetap11)):
+          enEE2.append(tetap11[i]**2/2+tetap21[i]**2/2+(1-np.cos(teta_11[i]))+(1-np.cos(teta_21[i]))+k*(teta_11[i]-teta_21[i])**2/2)
+          enEI2.append(tetap12[i]**2/2+tetap12[i]**2/2+(1-np.cos(teta_12[i]))+(1-np.cos(teta_22[i]))+k*(teta_12[i]-teta_22[i])**2/2)
+          enCN2.append(tetap13[i]**2/2+tetap13[i]**2/2+(1-np.cos(teta_13[i]))+(1-np.cos(teta_23[i]))+k*(teta_13[i]-teta_23[i])**2/2)
+     plt.plot(t,enEE2,color='blue',label='Euler Explicit Method')
+     plt.plot(t,enEI2,color='red',label='Euler Implicit Method')
+     plt.plot(t,enCN2,color='purple',label='Crank Nikolson')
+     plt.legend()
+     plt.show()
+
+#figures of angle, position and energy over time
+#print(graphDP(),posDP(),epsDP(t))

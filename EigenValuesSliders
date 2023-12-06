@@ -1,0 +1,116 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Button, Slider
+
+# we consider
+
+def euler_explicite(F,ti,tf,x0,N,A,B):
+    h=(tf-ti)/N                # time step
+    t,x=np.linspace(ti,tf,N+1),np.zeros((2,N+1)) # allocate time subdivision and solution
+    x[0:1,0]=x0[0:1] # initial condition
+    for n,tc in enumerate(t[:-1]):
+        f=F(t,x[:,n],A,B)
+        x[0,n+1] = x[0,n] + h*f[0]
+        x[1,n+1] = x[1,n] + h*f[1]
+    return [t,x]
+
+def euler_implicite(F,DF,ti,tf,x0,N,tol=1e-6,nl_it_max=50,A=1.5,B=1.5**2 + 1 - 1):
+    h=(tf-ti)/N                 # space step
+    t,x=np.linspace(ti,tf,N+1),np.zeros((2,N+1))  # time and solution empty
+    x[0:1,0]=x0[0:1] # initial condition
+    Id,rhs = np.eye(2),np.array([0.,0.])
+    
+    for n,tc in enumerate(t[:-1]):
+        xnew,xn = x[:,n],x[:,n] 
+        nl_it = 0
+        rhs = (xnew-xn)-h*F(t[n]+h,xnew,A,B)
+        while ((nl_it<nl_it_max) and  np.max(np.abs(rhs))>tol):
+            rhs = (xnew-xn)-h*F(t[n]+h,xnew,A,B) 
+            jac = Id - h*DF(t[n]+h,xnew,A,B)
+            inc = -np.linalg.solve(jac,rhs)
+            xnew = xnew + inc
+            nl_it = nl_it + 1
+        x[:,n+1]=xnew
+
+    return t,x
+
+
+def F(t,X,A,B) :
+    x , y = X[0] , X[1]
+    Fx = A - (B+1)*x + x**2*y
+    Fy =     (B  )*x - x**2*y
+    res = np.array([Fx,Fy])
+    return res
+
+def DF(t,X,A,B) :
+    x , y = X[0] , X[1]
+    Fxx,Fxy = -(B+1) + 2*x*y , +x**2
+    Fyx,Fyy =   B-2*x*y      , -x**2
+    res = np.array([[Fxx,Fxy],[Fyx,Fyy]])
+    return res
+
+
+# initials parameters
+A , B = 1.5 , 1.5**2 + 1 - 1 
+ti,tf=0,20
+N=500
+t=np.linspace(ti,tf,N+1)
+x0=np.array([A,B/A])
+x0=x0+1e-4
+X,Y=euler_explicite(F,ti,tf,x0,N,A,B)[0],euler_explicite(F,ti,tf,x0,N,A,B)[1][0]
+Z=euler_explicite(F,ti,tf,x0,N,A,B)[1][1]
+
+# create the figure and the axis
+fig, ax = plt.subplots()
+line1, = ax.plot(X,Y, lw=2)
+line2, = ax.plot(X,Z, lw=2)
+ax.set_xlabel('t')
+ax.set_ylabel('y(t)')
+plt.axis([0,20,0,6])
+plt.title("Concentration of X and Y over time (Euler explicit method)")
+
+
+# adjust the main plot to make room for the sliders
+fig.subplots_adjust(left=0.25, bottom=0.25)
+
+# Make a horizontal slider to control Re(A)
+axA = fig.add_axes([0.25, 0.1, 0.65, 0.03])
+A_slider = Slider(
+    ax=axA,
+    label='Re(A)',
+    valmin=0,
+    valmax=10,
+    valinit=A,
+)
+
+# Make a horizontal slider to control Re(B)
+axB = fig.add_axes([0.1, 0.25, 0.0225, 0.63])
+B_slider = Slider(
+    ax=axB,
+    label="Re(B)",
+    valmin=0,
+    valmax=10,ajuste et fait de la place pour les sliders
+    valinit=B,
+    orientation="vertical"
+)
+
+# Create a `matplotlib.widgets.Button` to reset the sliders to initial values
+resetax = fig.add_axes([0.8, 0.025, 0.1, 0.04])
+button = Button(resetax, 'Reset', hovercolor='0.975')
+
+def reset(event):
+    A_slider.reset()
+    B_slider.reset()
+button.on_clicked(reset)
+
+def update(val):
+    line1.set_ydata(euler_explicite(F,ti,tf,x0,N,A_slider.val,B_slider.val)[1][0])
+    line2.set_ydata(euler_explicite(F,ti,tf,x0,N,A_slider.val,B_slider.val)[1][1])    
+    fig.canvas.draw_idle()
+
+# register the update function with each slider
+A_slider.on_changed(update)
+B_slider.on_changed(update)
+
+
+plt.show()

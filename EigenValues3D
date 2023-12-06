@@ -1,0 +1,43 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import colors
+
+
+def GetEigen(A,B):
+    M=[[B-1,A**2],[-B,-A**2]] # the jacobian at the stability point
+    eigs=np.linalg.eig(M) #trouve les valeurs et vecteurs propres
+    max_eig=max(np.real(eigs[0])) # get the maximum real part 
+    return max_eig
+
+nA,nB=20,20
+A = np.linspace(0,10,nA)
+B = np.linspace(0,10,nB)
+
+
+#defining the 3D scene
+fig = plt.figure()
+
+cnorm = colors.TwoSlopeNorm(vmin=-4, vcenter=0., vmax=10) #so the white part is in 0
+ax = plt.axes(projection='3d')
+
+# defining all 3 axis
+u=A
+v=B
+z=np.zeros((len(u),len(v)))
+for j in range(len(u)):
+    z[j,:]=[GetEigen(u[i],v[j]) for i in range(len(v))]
+u,v=np.meshgrid(u,v) 
+
+
+x=A
+y=B
+w=np.zeros([len(x),len(y)])
+x,y=np.meshgrid(x,y)
+
+# plotting
+ax.plot_surface(x,y,w, color='green', alpha=0.5)
+ax.plot_surface(u, v, z, cmap="seismic", norm=cnorm ,alpha=0.8)
+ax.set_xlabel("A")
+ax.set_ylabel("B")
+ax.set_title("Max(Re(A),Re(B)) avec A et B les valeurs propres")
+plt.show()
