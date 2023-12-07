@@ -1,0 +1,20 @@
+setwd("C:/Users/admin-22499/Documents/MasterIM/S1/Analyse_BD")
+
+
+fraude <- read.csv('Data_Projet_1.csv', header=TRUE, sep=',', dec='.', stringsAsFactors = TRUE)
+
+
+fraude_EA <- fraude[1:733,]
+fraude_ET <- fraude[734:1100,]
+fraude_EA <- fraude_EA[,-1]
+fraude_EA <- fraude_EA[,-1]
+
+
+# Charger les bibliothèques nécessaires
+library(ROSE)
+
+# Définir votre ensemble de données (assurez-vous d'avoir une colonne 'classe' pour indiquer la classe de chaque observation)
+
+# Utiliser la fonction ROSE pour sur-échantillonner et équilibrer les classes
+rose_data <- ROSE(fraudulent ~ ., data = fraude_EA, seed = 123)$data
+nrow(rose_data[rose_data$fraudulent=="No",])
