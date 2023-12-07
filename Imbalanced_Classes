@@ -17,4 +17,4 @@ library(ROSE)
 
 # Utiliser la fonction ROSE pour sur-échantillonner et équilibrer les classes
 rose_data <- ROSE(fraudulent ~ ., data = fraude_EA, seed = 123)$data
-nrow(rose_data[rose_data$fraudulent=="No",])
+qplot(rose_data$fraudulent, main = "Répartition des classes", ylab = "Nombres d'instances", xlab = "Classe fraudulent", fill = rose_data$fraudulent)
