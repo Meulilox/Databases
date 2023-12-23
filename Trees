@@ -1,0 +1,37 @@
+setwd("C:/Users/admin-22499/Documents/MasterIM/S1/Analyse_BD")
+
+fraude <- read.csv('Data_Projet_1.csv', header=TRUE, sep=',', dec='.', stringsAsFactors = TRUE)
+
+fraude_EA <- fraude[1:733,]
+fraude_ET <- fraude[734:1100,]
+fraude_EA <- fraude_EA[,-1]
+fraude_EA <- fraude_EA[,-1]
+
+fraude_EA$fraudulent <- as.factor(fraude_EA$fraudulent)
+
+# Dans un premier temps,
+# on va faire une analyse exploratoire des données
+
+# cluster/ histogramme/ boxplot/ corrélation etc...
+
+# Dans un second temps,
+# on va faire une analyse prédictive grâce à differents arbres de décision
+
+# Pas de préparation des données
+
+# On va utiliser la librairie rpart
+library(rpart)
+library(rpart.plot)
+
+treeRP <- rpart(fraudulent ~ ., data = fraude_EA, method = "class")
+prp(treeRP, extra=1, box.col=c('tomato',"darkturquoise")[treeRP$frame$yval])
+
+# On applique l'arbre de décision sur l'échantillon test
+testRP <- predict(treeRP, fraude_ET, type = "class")
+fraude_ET$Prediction <- testRP
+
+# Calculons maintenant la matrice de confusion
+# On va utiliser la librairie caret
+library(caret)
+
+confusionMatrix( fraude_ET$fraudulent, fraude_ET$Prediction)
